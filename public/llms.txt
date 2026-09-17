@@ -1,0 +1,5 @@
+# Rhova
+
+> An interactive map of gap year placements worldwide, starting with rugby clubs and expanding to other categories over time. Every listing is based on a real phone call to the host organisation, not scraped data, and includes practical detail beyond contact info: skill level required, housing/job support, cost of living, social scene, typical week, visa notes, and safety notes.
+
+Rhova helps people planning a gap year find a specific, verified place to go: a rugby club that takes overseas players for a season, a farm that offers room and board for work, a ski resort hiring seasonal staff, along with an honest sense of what living there is actually like.

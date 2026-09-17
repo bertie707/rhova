@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Club {
+  id       String @id @default(cuid())
+
+  // Core
+  name      String
+  category  String // e.g. "rugby" — free text so new categories need no schema change
+  city      String
+  country   String
+  latitude  Float
+  longitude Float
+
+  description String
+
+  // Skill & support
+  skillLevel   Int // 1-5
+  housingHelp  Boolean @default(false)
+  jobHelp      Boolean @default(false)
+  ageRangeMin  Int
+  ageRangeMax  Int
+
+  // Practicalities
+  costTier    String // "Low" | "Moderate" | "High"
+  costDetail  String
+  carNeeded   Boolean @default(false)
+  carNote     String
+
+  // Life & culture
+  socialScene      String
+  typicalWeek      String
+  placementLength  String
+  intakeTiming     String
+  languageNeeded   String
+  visaNote         String
+  nearby           String
+  safetyNotes      String
+
+  // Contact
+  contactName  String
+  contactPhone String
+  contactEmail String
+
+  // AI-researched local/travel guide (JSON — see src/lib/destinationGuide.ts),
+  // drafted with web search and reviewed/edited by an admin before saving.
+  destinationGuide String @default("")
+
+  // Verification
+  lastContactedAt DateTime?
+  verified        Boolean   @default(false)
+  isSampleData    Boolean   @default(false)
+
+  // Visible on the public map. Defaults true so existing/legacy rows keep
+  // showing up unchanged — new clubs default to false in the admin form
+  // until an admin explicitly confirms they're ready to go live.
+  published Boolean @default(true)
+
+  // How this row entered the system: "admin" (added via the admin panel,
+  // usually after cold outreach tracked in Lead) or "self_submitted" (the
+  // club filled in the public /list-your-club form themselves). Both land
+  // unpublished in the same admin review queue — this just flags which
+  // ones didn't come from your own outreach.
+  source String @default("admin")
+
+  media     Media[]
+  favorites Favorite[]
+  reviews   Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+model Media {
+  id     String @id @default(cuid())
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  clubId String
+
+  type  String // "photo" | "video"
+  url   String // full URL on Vercel Blob storage
+  order Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([clubId])
+}
+
+// A visitor is identified by email only — no password, sign-in is via a
+// one-time code (see otpCode/otpExpiresAt below).
+model Visitor {
+  id    String @id @default(cuid())
+  email String @unique
+
+  notes String @default("") // private "gap year ideas" scratchpad
+
+  // TEMP while there's no real email-sending service wired up: the current
+  // OTP code, shown directly to the visitor instead of emailed. Once a real
+  // email provider is configured, stop returning this in the API response —
+  // see src/app/api/auth/request-code/route.ts.
+  otpCode      String?
+  otpExpiresAt DateTime?
+
+  favorites Favorite[]
+  reviews   Review[]
+
+  createdAt DateTime @default(now())
+}
+
+model Favorite {
+  id String @id @default(cuid())
+
+  visitor   Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  visitorId String
+  club      Club    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  clubId    String
+
+  createdAt DateTime @default(now())
+
+  @@unique([visitorId, clubId])
+  @@index([clubId])
+}
+
+// A prospective club found during outreach research — not yet a full Club
+// listing. Tracks the email → reply → phone call → confirmed pipeline
+// before something graduates into a real (much richer) Club record.
+model Lead {
+  id String @id @default(cuid())
+
+  name    String
+  city    String
+  country String
+  email   String
+  website String?
+  category String @default("rugby")
+
+  status String @default("not_contacted") // not_contacted | emailed | replied | not_interested | called | added
+  notes  String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+model Review {
+  id String @id @default(cuid())
+
+  club      Club    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  clubId    String
+  visitor   Visitor @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  visitorId String
+
+  authorName String
+  rating     Int // 1-5
+  text       String
+  approved   Boolean @default(false) // admin must approve before it's public
+
+  createdAt DateTime @default(now())
+
+  @@index([clubId])
+}
+
+// Backs the rate limiter in src/lib/rateLimit.ts. Used to live as an
+// in-memory Map, which worked fine for a single long-running process but
+// silently stopped rate-limiting anything once deployed to serverless
+// (each invocation can land on a different instance with its own memory) —
+// a real table shared across instances is what actually enforces the limit.
+model RateLimitAttempt {
+  key            String    @id
+  count          Int       @default(1)
+  firstAttemptAt DateTime  @default(now())
+  blockedUntil   DateTime?
+}

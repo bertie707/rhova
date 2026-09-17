@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gap Year Compass</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --coral: #FF6B4A;
+    --coral-deep: #E85A3A;
+    --teal: #1C8C7C;
+    --gold: #CFA125;
+    --gold-deep: #B08A1C;
+    --ink: #1E2A28;
+    --ink-soft: #5B6864;
+    --white: #FFFFFF;
+    --cloud: rgba(255,255,255,0.94);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  #map { position: absolute; inset: 0; z-index: 0; background: #bcd8e8; }
+
+  /* ---------------- Floating brand mark ---------------- */
+  #brand {
+    position: absolute; top: 18px; left: 18px; z-index: 500;
+    background: var(--cloud);
+    backdrop-filter: blur(6px);
+    padding: 9px 16px;
+    border-radius: 999px;
+    box-shadow: 0 4px 18px rgba(20,40,35,0.18);
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  #brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--coral); }
+
+  /* ---------------- Top floating search stack ---------------- */
+  #topstack {
+    position: absolute; top: 18px; right: 18px;
+    z-index: 500;
+    display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+    width: 280px;
+  }
+
+  @media (max-width: 720px) {
+    #topstack { width: calc(100vw - 24px); right: 12px; top: 12px; }
+    #brand { top: 12px; left: 12px; }
+  }
+
+  .search-pill {
+    width: 100%;
+    background: var(--cloud);
+    backdrop-filter: blur(6px);
+    border-radius: 999px;
+    box-shadow: 0 6px 24px rgba(20,40,35,0.2);
+    display: flex;
+    align-items: center;
+    padding: 4px 4px 4px 16px;
+  }
+
+  .search-pill svg { flex-shrink: 0; opacity: 0.55; }
+
+  .search-pill input {
+    border: none; outline: none; background: transparent;
+    flex: 1; padding: 10px 8px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13.5px; color: var(--ink);
+    min-width: 0;
+  }
+  .search-pill input::placeholder { color: #8C9A96; }
+
+  .search-pill button {
+    background: var(--coral); color: white; border: none;
+    padding: 9px 16px; border-radius: 999px;
+    font-weight: 600; font-size: 13px; cursor: pointer;
+    white-space: nowrap;
+  }
+  .search-pill button:hover { background: var(--coral-deep); }
+
+  .chip-row {
+    display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;
+  }
+
+  .chip {
+    background: var(--cloud);
+    backdrop-filter: blur(6px);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(20,40,35,0.14);
+    border: 2px solid transparent;
+  }
+  .chip:hover { color: var(--ink); }
+  .chip.active { background: var(--teal); color: white; }
+
+  /* ---------------- Filter button + panel ---------------- */
+  #filterToggle {
+    background: var(--cloud);
+    backdrop-filter: blur(6px);
+    border: none;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    box-shadow: 0 4px 18px rgba(20,40,35,0.18);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  #filterToggle.active { background: var(--teal); }
+  #filterToggle.active svg path, #filterToggle.active svg line { stroke: white; }
+  #filterToggle .badge {
+    position: absolute; top: -3px; right: -3px;
+    background: var(--sun); color: var(--ink);
+    font-size: 10px; font-weight: 700;
+    width: 17px; height: 17px; border-radius: 50%;
+    display: none; align-items: center; justify-content: center;
+  }
+  #filterToggle .badge.show { display: flex; }
+
+  #filterPanel {
+    position: absolute; top: 66px; right: 18px; z-index: 500;
+    width: 230px;
+    background: var(--cloud);
+    backdrop-filter: blur(6px);
+    border-radius: 18px;
+    box-shadow: 0 8px 28px rgba(20,40,35,0.22);
+    padding: 18px;
+    display: none;
+  }
+  #filterPanel.open { display: block; }
+
+  .panel-title { font-size: 11.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 10px; text-transform: none; }
+
+  .toggle-row {
+    display: flex; align-items: center; gap: 9px;
+    margin-bottom: 11px; font-size: 13.5px; cursor: pointer; user-select: none;
+  }
+  .toggle-row input { accent-color: var(--teal); width: 16px; height: 16px; }
+
+  .skill-scale { display: flex; gap: 4px; margin-top: 6px; margin-bottom: 4px; }
+  .skill-dot { flex: 1; height: 7px; border-radius: 4px; background: #E1E7E4; cursor: pointer; }
+  .skill-dot.on { background: var(--sun); }
+  .skill-hint { font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+
+  hr.pline { border: none; border-top: 1px solid #E1E7E4; margin: 14px 0; }
+
+  #resultCount {
+    position: absolute; bottom: 18px; left: 18px; z-index: 500;
+    background: var(--cloud); backdrop-filter: blur(6px);
+    padding: 8px 16px; border-radius: 999px;
+    font-size: 12.5px; color: var(--ink-soft);
+    box-shadow: 0 4px 14px rgba(20,40,35,0.16);
+  }
+  #resultCount strong { color: var(--ink); }
+
+  #sampleNote {
+    position: absolute; bottom: 18px; right: 18px; z-index: 500;
+    max-width: 240px;
+    background: var(--sun);
+    padding: 10px 14px; border-radius: 14px;
+    font-size: 11.5px; color: var(--ink);
+    box-shadow: 0 4px 14px rgba(20,40,35,0.16);
+  }
+  @media (max-width: 720px) { #sampleNote { display: none; } }
+
+  /* ---------------- Custom pins (teardrop, gold) ---------------- */
+  .pin-wrap {
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s ease;
+  }
+  .pin-wrap:hover { transform: scale(1.15) translateY(-2px); }
+  .pin {
+    width: 26px; height: 26px;
+    background: var(--gold);
+    border: 2.5px solid white;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .pin::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 8px; height: 8px;
+    background: white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  /* ---------------- Leaflet bubble overrides ---------------- */
+  .leaflet-tooltip.quick-bubble {
+    background: white; color: var(--ink);
+    border: none; border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(20,40,35,0.28);
+    padding: 10px 14px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    opacity: 1 !important;
+  }
+  .leaflet-tooltip.quick-bubble::before { border-top-color: white; }
+  .qb-row { display: flex; gap: 9px; align-items: flex-start; }
+  .qb-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+  .qb-name { font-family: 'Fraunces', serif; font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+  .qb-loc { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 6px; }
+  .qb-tags { display: flex; gap: 5px; }
+  .qb-tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; background: #EEF2F0; color: var(--ink-soft); }
+  .qb-tag.yes { background: #DCF2EC; color: var(--teal); }
+
+  .leaflet-popup-content-wrapper.detail-bubble {
+    border-radius: 20px;
+    box-shadow: 0 12px 36px rgba(20,40,35,0.35);
+    padding: 0;
+    overflow: hidden;
+  }
+  .leaflet-popup-tip { background: white; }
+  .leaflet-popup-content { margin: 0; width: 300px !important; }
+  .leaflet-popup-close-button { color: white !important; font-size: 20px !important; top: 10px !important; right: 12px !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+  .db-media { position: relative; height: 150px; background: #DDE3E0; }
+  .db-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .db-hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(10,20,18,0.82), rgba(10,20,18,0) 65%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 12px 18px;
+    color: white;
+  }
+  .db-sport { font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px; opacity: 0.9; margin-bottom: 3px; }
+  .db-name { font-family: 'Fraunces', serif; font-weight: 700; font-size: 17px; line-height: 1.25; }
+  .db-loc { font-size: 12px; opacity: 0.9; margin-top: 3px; }
+  .db-body { padding: 15px 20px 18px; }
+  .db-gallery { display: flex; gap: 6px; margin-top: 6px; }
+  .db-gallery img { width: calc(50% - 3px); height: 72px; object-fit: cover; border-radius: 10px; }
+  .db-video { width: 100%; border-radius: 10px; margin-top: 8px; display: block; background: #000; }
+  .db-video-placeholder {
+    width: 100%; height: 110px; margin-top: 8px; border-radius: 10px;
+    background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .db-video-placeholder::after {
+    content: ''; position: absolute; inset: 0; background: rgba(10,20,18,0.35); border-radius: 10px;
+  }
+  .db-play-btn {
+    position: relative; z-index: 1;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(255,255,255,0.92);
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; padding-left: 3px;
+  }
+  .media-note { font-size: 10.5px; color: var(--ink-soft); margin-top: 7px; font-style: italic; }
+  .db-field { margin-bottom: 12px; }
+  .db-label { font-size: 10.5px; color: var(--ink-soft); margin-bottom: 3px; font-weight: 600; }
+  .db-value { font-size: 13.5px; line-height: 1.45; }
+  .db-skillbar { display: flex; gap: 3px; margin-top: 5px; }
+  .db-skillbar span { flex: 1; height: 6px; border-radius: 3px; background: #E1E7E4; }
+  .db-skillbar span.on { background: var(--sun); }
+  .db-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .db-support { border-radius: 10px; padding: 8px 10px; background: #F1F4F2; }
+  .db-support.yes { background: #DCF2EC; }
+  .db-support-label { font-size: 10px; color: var(--ink-soft); }
+  .db-support-status { font-size: 13px; font-weight: 600; margin-top: 1px; }
+  .db-support.yes .db-support-status { color: var(--teal); }
+
+  .db-grid3 { grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .db-fact { border-radius: 10px; padding: 8px 8px; background: #F1F4F2; text-align: center; }
+  .db-subnote { font-size: 10.5px; color: var(--ink-soft); margin-top: 6px; line-height: 1.4; }
+
+  .db-more-toggle {
+    width: 100%; margin-top: 14px;
+    background: #F1F4F2; border: none; border-radius: 10px;
+    padding: 9px; font-size: 12.5px; font-weight: 600; color: var(--ink);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .db-more-toggle:hover { background: #E4EAE6; }
+  .db-more-toggle .chev { transition: transform 0.2s ease; }
+  .db-more-toggle.open .chev { transform: rotate(180deg); }
+  .db-more { display: none; margin-top: 12px; }
+  .db-more.open { display: block; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="brand"><span class="dot"></span>Gap Year Compass</div>
+
+<div id="topstack">
+  <div style="display:flex; gap:8px; align-items:center;">
+    <div class="search-pill">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="rugby, farm work…" />
+      <button id="searchBtn">Go</button>
+    </div>
+    <button id="filterToggle" title="Filters">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="6" r="2" fill="white"/><circle cx="16" cy="12" r="2" fill="white"/><circle cx="7" cy="18" r="2" fill="white"/></svg>
+      <span class="badge" id="filterBadge">0</span>
+    </button>
+  </div>
+  <div class="chip-row" id="chips"></div>
+</div>
+
+<div id="filterPanel">
+  <div class="panel-title">Support offered</div>
+  <label class="toggle-row"><input type="checkbox" id="filterHousing" /> Helps with housing</label>
+  <label class="toggle-row"><input type="checkbox" id="filterJob" /> Helps with a job</label>
+  <hr class="pline" />
+  <div class="panel-title">Minimum skill level</div>
+  <div class="skill-scale" id="skillScale">
+    <div class="skill-dot" data-level="1"></div>
+    <div class="skill-dot" data-level="2"></div>
+    <div class="skill-dot" data-level="3"></div>
+    <div class="skill-dot" data-level="4"></div>
+    <div class="skill-dot" data-level="5"></div>
+  </div>
+  <div class="skill-hint" id="skillHint">Any level</div>
+</div>
+
+<div id="resultCount"><strong id="countNum">0</strong> places on the map — hover a pin to preview</div>
+<div id="sampleNote">Sample data — swap these for the real clubs you call.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// NOTE: entirely placeholder data — fictional examples for prototyping only.
+const CLUBS = [
+  { id: 1, name: "Harbourside RFC", sport: "rugby", city: "Wellington", country: "New Zealand", lat: -41.2865, lng: 174.7762, skill: 2, housing: true, job: true,
+    contact: { name: "Sam Okafor, Club Secretary", phone: "+64 4 555 0182", email: "gapyear@harboursiderfc.example" },
+    desc: "Coastal club fielding two senior sides and a strong women's team. Regularly hosts overseas players for a season, pairs them with a billet family, and can usually line up bar or coaching work at a partner school.",
+    ageRange: "18–24", costTier: "Moderate", costDetail: "~NZ$220–280/week for food & incidentals", carNeeded: false, carNote: "Walkable to ground; buses cover the rest",
+    social: "Tight squad that trains together 3x a week and socialises hard after — most overseas players say the team becomes their main friend group within a month.",
+    typicalWeek: "Training Tue/Thu evenings, match Saturday, coaching shifts at the partner school most weekday mornings.",
+    placementLength: "Typically one full season (Apr–Sep)", intake: "Rolling, best to arrive by March",
+    language: "English required, conversational is fine", visa: "Working Holiday Visa covers this comfortably",
+    nearby: "Beaches, Cook Strait ferry to the South Island, Wellington's café scene", safety: "Very safe city, standard precautions" },
+  { id: 2, name: "Stellenbosch Vine & Vale RFC", sport: "rugby", city: "Stellenbosch", country: "South Africa", lat: -33.9346, lng: 18.8601, skill: 3, housing: true, job: false,
+    contact: { name: "Pieter van Wyk, Tours Coordinator", phone: "+27 21 555 0447", email: "tours@vinevalerfc.example" },
+    desc: "Competitive club side attached to the local university league. Looking for players comfortable at provincial club standard. Shared player housing near the ground; work-seeking is on you.",
+    ageRange: "19–25", costTier: "Low", costDetail: "~R2,800–3,600/week for food & incidentals", carNeeded: true, carNote: "Town is spread out; a car or scooter helps a lot",
+    social: "Big shared player house, very social, but standard is high and it's a competitive-first environment rather than a beginner's social club.",
+    typicalWeek: "Training most evenings, gym sessions, match day Saturday.",
+    placementLength: "One season (Mar–Aug) minimum", intake: "Fixed intake in February",
+    language: "English widely spoken; some Afrikaans in daily life", visa: "Requires a visitor's visa endorsed for sport — check timing carefully",
+    nearby: "Winelands, Cape Town an hour away, Table Mountain", safety: "Generally safe; usual city-travel awareness advised" },
+  { id: 3, name: "Ponsonby Fringe Rugby Club", sport: "rugby", city: "Auckland", country: "New Zealand", lat: -36.8563, lng: 174.7445, skill: 1, housing: false, job: true,
+    contact: { name: "Riki Manu, Club Captain", phone: "+64 9 555 0311", email: "join@ponsonbyfringe.example" },
+    desc: "Social-first club welcoming complete beginners into a development side. No housing support, but the club owner's landscaping business regularly takes on gap year labourers.",
+    ageRange: "18–23", costTier: "High", costDetail: "~NZ$300–380/week — Auckland is pricey", carNeeded: false, carNote: "Good public transport in the inner suburbs",
+    social: "Very beginner-friendly and social — this club exists as much for the post-match drinks as the rugby.",
+    typicalWeek: "One training night, casual Saturday matches, landscaping work most weekdays.",
+    placementLength: "Flexible, from a few weeks to a full season", intake: "Rolling year-round",
+    language: "English required", visa: "Working Holiday Visa recommended for the landscaping work",
+    nearby: "City beaches, Waiheke Island ferry, big live music scene", safety: "Safe, standard city awareness" },
+  { id: 4, name: "Llanberis Valley RFC", sport: "rugby", city: "Llanberis", country: "Wales, UK", lat: 53.1189, lng: -4.1264, skill: 2, housing: true, job: true,
+    contact: { name: "Eira Hughes, Secretary", phone: "+44 1286 555 023", email: "secretary@llanberisvalley.example" },
+    desc: "Small valley club near Snowdonia that's hosted overseas gap-year players for a decade. Homestay with a club family, plus seasonal work guiding at a local outdoor centre.",
+    ageRange: "18–22", costTier: "Low", costDetail: "~£90–130/week, food included in homestay", carNeeded: false, carNote: "Small village, everything's walkable",
+    social: "Close-knit village club — you'll be recognised in the pub within a week. Quiet compared to a city club, in a good way.",
+    typicalWeek: "Training twice weekly, Saturday matches, guiding shifts at the outdoor centre.",
+    placementLength: "3–6 months typical", intake: "Best start is September for the full season",
+    language: "English required, some Welsh in the community", visa: "Youth Mobility Scheme visa if eligible",
+    nearby: "Snowdon, hiking and climbing straight from the village", safety: "Very safe, remote and quiet" },
+  { id: 5, name: "Buenos Aires Costa RC", sport: "rugby", city: "Buenos Aires", country: "Argentina", lat: -34.6037, lng: -58.3816, skill: 4, housing: false, job: false,
+    contact: { name: "Martín Ibáñez, International Liaison", phone: "+54 11 5555 0199", email: "internacional@costarc.example" },
+    desc: "High-performance club used to hosting serious overseas players wanting a competitive Argentine season. No support with housing or work — bring your own plan.",
+    ageRange: "20–27", costTier: "Moderate", costDetail: "~US$180–240/week for food & incidentals", carNeeded: false, carNote: "Good metro and bus network",
+    social: "Serious rugby culture first, social second — you'll earn your place, and friendships come through performance and time.",
+    typicalWeek: "Training most weekday evenings, gym, match Saturday.",
+    placementLength: "One season minimum to be taken seriously", intake: "Season starts March",
+    language: "Spanish strongly recommended", visa: "Tourist visa for short stays; longer stays need proper paperwork",
+    nearby: "Big city nightlife, day trips to the Tigre Delta", safety: "Use normal city caution, especially at night" },
+  { id: 6, name: "Whistler Ridge Farm Collective", sport: "farm work", city: "Whistler", country: "Canada", lat: 50.1163, lng: -122.9574, skill: 1, housing: true, job: true,
+    contact: { name: "Dana Reyes, Volunteer Coordinator", phone: "+1 604 555 0166", email: "volunteer@whistlerridge.example" },
+    desc: "WWOOF-style organic farm taking on 3–6 month volunteers. On-site cabin housing and food included in exchange for morning farm work; free afternoons for skiing in season.",
+    ageRange: "18–30", costTier: "Low", costDetail: "Housing & food included, ~CA$60–90/week spending money", carNeeded: false, carNote: "On-site; shuttle into town",
+    social: "Small rotating group of volunteers, communal meals, genuinely tight-knit — this is the classic farm-family gap year experience.",
+    typicalWeek: "Farm work mornings, free afternoons — skiing in winter, hiking in summer.",
+    placementLength: "3–6 months", intake: "Rolling, year-round",
+    language: "English fine, no fluency required", visa: "Working Holiday Visa (IEC) required for Canada",
+    nearby: "World-class skiing, alpine lakes, Vancouver 2hrs away", safety: "Very safe, remote and rural" },
+  { id: 7, name: "Kandy Hill Coaching Academy", sport: "teaching", city: "Kandy", country: "Sri Lanka", lat: 7.2906, lng: 80.6337, skill: 1, housing: true, job: true,
+    contact: { name: "Nadeesha Perera, Programme Lead", phone: "+94 81 555 0288", email: "volunteers@kandyhill.example" },
+    desc: "English and sport coaching placement at a village school. Homestay housing arranged with a local family; modest weekly stipend for coaching hours.",
+    ageRange: "18–25", costTier: "Low", costDetail: "~US$40–60/week, homestay meals included", carNeeded: false, carNote: "Village is walkable, tuk-tuks for anything further",
+    social: "Homestay-centred, warm and family-oriented rather than party-social — expect to bond with the family and other volunteers, not a big nightlife scene.",
+    typicalWeek: "Coaching/teaching weekday mornings, free afternoons, community events some weekends.",
+    placementLength: "6–12 weeks typical, longer possible", intake: "Rolling, new starts most months",
+    language: "English needed for teaching; basic Sinhala helpful", visa: "Tourist visa usually sufficient for short volunteer stints",
+    nearby: "Temple of the Tooth, tea plantations, hill country trains", safety: "Generally safe; standard travel precautions" },
+  { id: 8, name: "Queenstown Alpine Ski Crew", sport: "ski season", city: "Queenstown", country: "New Zealand", lat: -45.0312, lng: 168.6626, skill: 2, housing: true, job: true,
+    contact: { name: "Josh Fletcher, Staffing Manager", phone: "+64 3 555 0421", email: "season@alpinecrew.example" },
+    desc: "Lift operations and lodge work for the winter season. Staff accommodation on-site; ski pass included; some rugby-playing staff turn out for the local social side too.",
+    ageRange: "18–26", costTier: "Moderate", costDetail: "~NZ$180–250/week, accommodation covered", carNeeded: false, carNote: "Staff shuttle to the mountain",
+    social: "Big, loud seasonal-staff scene — shared lodges, constant apres-ski socialising, easy to make friends fast.",
+    typicalWeek: "5–6 shifts a week on the mountain, days off used for riding or resting.",
+    placementLength: "One winter season (Jun–Sep)", intake: "Fixed intake in May",
+    language: "English required", visa: "Working Holiday Visa required",
+    nearby: "Skiing, bungy jumping, Milford Sound day trips", safety: "Safe; usual mountain-safety awareness" }
+];
+
+const SPORT_COLORS = { "rugby": "#FF6B4A", "farm work": "#1C8C7C", "teaching": "#7A5CC7", "ski season": "#2E9BD6" };
+const SKILL_LABELS = ["", "Complete beginner welcome", "Some experience useful", "Club-level experience expected", "Competitive / representative level", "High performance"];
+
+let state = { query: "", housing: false, job: false, minSkill: 0 };
+
+// ---------------- Illustrated world map (fully self-contained, no external map requests) ----------------
+const MAP_W = 1000, MAP_H = 500;
+
+function project(lat, lng) {
+  const x = (lng + 180) / 360 * MAP_W;
+  const y = (90 - lat) / 180 * MAP_H;
+  return { x, y };
+}
+// Leaflet CRS.Simple treats y as increasing upward, image rows increase downward — flip here.
+function toLatLng(lat, lng) {
+  const p = project(lat, lng);
+  return [MAP_H - p.y, p.x];
+}
+
+const worldSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${MAP_W} ${MAP_H}">
+  <defs>
+    <linearGradient id="ocean" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#BFE3EF"/>
+      <stop offset="45%" stop-color="#7FC1DC"/>
+      <stop offset="100%" stop-color="#3E7FAE"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="${MAP_W}" height="${MAP_H}" fill="url(#ocean)"/>
+  <g stroke="#ffffff" stroke-opacity="0.16" stroke-width="1">
+    ${Array.from({length:9}).map((_,i)=>`<line x1="0" y1="${i*50+50}" x2="${MAP_W}" y2="${i*50+50}"/>`).join('')}
+    ${Array.from({length:19}).map((_,i)=>`<line x1="${i*50+50}" y1="0" x2="${i*50+50}" y2="${MAP_H}"/>`).join('')}
+  </g>
+  <g fill="#6FA96B" stroke="#4F8A54" stroke-width="2" stroke-linejoin="round">
+    <path d="M130,68 L205,50 L262,88 L272,140 L235,182 L205,232 L168,222 L128,182 L100,120 Z"/>
+    <path d="M232,238 L303,232 L338,300 L318,382 L276,424 L242,392 L212,320 L218,268 Z"/>
+    <path d="M470,74 L532,62 L562,90 L556,132 L512,152 L480,132 L463,100 Z"/>
+    <path d="M480,158 L562,153 L582,192 L576,262 L556,332 L520,378 L488,342 L468,270 L463,200 Z"/>
+    <path d="M560,58 L652,38 L752,54 L852,90 L872,150 L820,192 L760,232 L700,252 L648,222 L598,180 L568,140 L554,100 Z"/>
+    <path d="M790,340 L852,334 L878,366 L866,402 L818,412 L788,392 L778,364 Z"/>
+    <path d="M958,340 L978,335 L990,365 L972,388 L956,372 Z"/>
+    <path d="M962,395 L984,392 L994,420 L974,432 L960,412 Z"/>
+  </g>
+  <g fill="#D9C48C" opacity="0.85">
+    <path d="M482,160 L560,155 L576,208 L556,224 L492,220 L474,190 Z"/>
+    <path d="M652,90 L730,84 L760,118 L722,140 L662,130 Z"/>
+    <path d="M592,180 L630,175 L646,208 L616,228 L592,214 Z"/>
+    <path d="M806,354 L846,351 L860,374 L836,394 L806,384 Z"/>
+  </g>
+  <rect x="0" y="466" width="${MAP_W}" height="34" fill="#E8EDEE" opacity="0.9"/>
+  <line x1="0" y1="250" x2="${MAP_W}" y2="250" stroke="#ffffff" stroke-opacity="0.3" stroke-width="1.5" stroke-dasharray="3,4"/>
+</svg>`;
+
+const worldMapUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(worldSvg);
+
+const bounds = [[0, 0], [MAP_H, MAP_W]];
+const map = L.map('map', { crs: L.CRS.Simple, zoomControl: false, minZoom: -2, maxZoom: 4, zoomSnap: 0.25 });
+L.imageOverlay(worldMapUrl, bounds).addTo(map);
+map.fitBounds(bounds);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+const markers = {};
+
+function pinIcon() {
+  return L.divIcon({
+    className: '',
+    html: `<div class="pin-wrap"><div class="pin"></div></div>`,
+    iconSize: [30, 32],
+    iconAnchor: [15, 30]
+  });
+}
+
+CLUBS.forEach(c => {
+  const color = SPORT_COLORS[c.sport] || '#CFA125';
+  const m = L.marker(toLatLng(c.lat, c.lng), { icon: pinIcon() }).addTo(map);
+
+  const photoTile = (w, h, seed) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">
+      <defs><linearGradient id="g${seed}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${color}"/><stop offset="100%" stop-color="#1E2A28"/>
+      </linearGradient></defs>
+      <rect width="${w}" height="${h}" fill="url(#g${seed})"/>
+      <circle cx="${w*0.28}" cy="${h*0.32}" r="${h*0.16}" fill="#ffffff" opacity="0.18"/>
+      <path d="M0,${h*0.78} L${w*0.22},${h*0.55} L${w*0.4},${h*0.72} L${w*0.62},${h*0.48} L${w},${h*0.68} L${w},${h} L0,${h} Z" fill="#ffffff" opacity="0.14"/>
+    </svg>`;
+    return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+  };
+  const heroImg = photoTile(440, 260, c.id + 'a');
+  const thumbImg = photoTile(100, 100, c.id + 't');
+  const galleryImg1 = photoTile(260, 160, c.id + 'b');
+  const galleryImg2 = photoTile(260, 160, c.id + 'c');
+
+  const quickHtml = `
+    <div class="qb-row">
+      <img class="qb-thumb" src="${thumbImg}" alt="" />
+      <div>
+        <div class="qb-name">${c.name}</div>
+        <div class="qb-loc">${c.city}, ${c.country}</div>
+        <div class="qb-tags">
+          <span class="qb-tag ${c.housing ? 'yes' : ''}">${c.housing ? 'Housing' : 'No housing'}</span>
+          <span class="qb-tag ${c.job ? 'yes' : ''}">${c.job ? 'Job help' : 'No job help'}</span>
+        </div>
+      </div>
+    </div>
+  `;
+  m.bindTooltip(quickHtml, { direction: 'top', offset: [0, -18], className: 'quick-bubble' });
+
+  const skillBar = [1,2,3,4,5].map(n => `<span class="${n <= c.skill ? 'on' : ''}"></span>`).join('');
+  const detailHtml = `
+    <div class="db-media">
+      <img src="${heroImg}" alt="${c.name}" />
+      <div class="db-hero-overlay">
+        <div class="db-sport">${c.sport.toUpperCase()}</div>
+        <div class="db-name">${c.name}</div>
+        <div class="db-loc">${c.city}, ${c.country}</div>
+      </div>
+    </div>
+    <div class="db-body">
+      <div class="db-field"><div class="db-value">${c.desc}</div></div>
+      <div class="db-field">
+        <div class="db-label">Photos &amp; video</div>
+        <div class="db-gallery">
+          <img src="${galleryImg1}" alt="" />
+          <img src="${galleryImg2}" alt="" />
+        </div>
+        <div class="db-video-placeholder" style="background-image:url('${galleryImg2}')">
+          <div class="db-play-btn">▶</div>
+        </div>
+        <div class="media-note">Illustrated placeholders — the real map, photos and video appear once you add your own clubs.</div>
+      </div>
+      <div class="db-field">
+        <div class="db-label">Skill level required</div>
+        <div class="db-value">${SKILL_LABELS[c.skill]}</div>
+        <div class="db-skillbar">${skillBar}</div>
+      </div>
+      <div class="db-field">
+        <div class="db-label">Support offered</div>
+        <div class="db-grid">
+          <div class="db-support ${c.housing ? 'yes' : ''}"><div class="db-support-label">Housing</div><div class="db-support-status">${c.housing ? 'Arranged' : 'Not offered'}</div></div>
+          <div class="db-support ${c.job ? 'yes' : ''}"><div class="db-support-label">Work</div><div class="db-support-status">${c.job ? 'Arranged' : 'Not offered'}</div></div>
+        </div>
+      </div>
+      <div class="db-field">
+        <div class="db-grid db-grid3">
+          <div class="db-fact"><div class="db-support-label">Typical age</div><div class="db-support-status">${c.ageRange}</div></div>
+          <div class="db-fact"><div class="db-support-label">Cost of living</div><div class="db-support-status">${c.costTier}</div></div>
+          <div class="db-fact"><div class="db-support-label">Car needed</div><div class="db-support-status">${c.carNeeded ? 'Yes' : 'No'}</div></div>
+        </div>
+        <div class="db-subnote">${c.costDetail} · ${c.carNote}</div>
+      </div>
+
+      <button class="db-more-toggle" type="button">Tap for more detail <span class="chev">▾</span></button>
+      <div class="db-more">
+        <div class="db-field"><div class="db-label">Social scene</div><div class="db-value">${c.social}</div></div>
+        <div class="db-field"><div class="db-label">A typical week</div><div class="db-value">${c.typicalWeek}</div></div>
+        <div class="db-field"><div class="db-label">Placement length &amp; intake</div><div class="db-value">${c.placementLength} — ${c.intake}</div></div>
+        <div class="db-field"><div class="db-label">Language needed</div><div class="db-value">${c.language}</div></div>
+        <div class="db-field"><div class="db-label">Visa note</div><div class="db-value">${c.visa}</div></div>
+        <div class="db-field"><div class="db-label">Nearby</div><div class="db-value">${c.nearby}</div></div>
+        <div class="db-field"><div class="db-label">Safety notes</div><div class="db-value">${c.safety}</div></div>
+      </div>
+
+      <hr class="pline" style="margin:14px 0;" />
+      <div class="db-field"><div class="db-label">Contact</div><div class="db-value">${c.contact.name}</div></div>
+      <div class="db-field"><div class="db-label">Phone</div><div class="db-value">${c.contact.phone}</div></div>
+      <div class="db-field" style="margin-bottom:0;"><div class="db-label">Email</div><div class="db-value">${c.contact.email}</div></div>
+    </div>
+  `;
+  m.bindPopup(detailHtml, { className: 'detail-bubble', maxWidth: 320, closeButton: true });
+
+  markers[c.id] = m;
+});
+
+// ---------------- Chips ----------------
+const chipsEl = document.getElementById('chips');
+const uniqueSports = [...new Set(CLUBS.map(c => c.sport))];
+uniqueSports.forEach(s => {
+  const chip = document.createElement('div');
+  chip.className = 'chip';
+  chip.textContent = s;
+  chip.addEventListener('click', () => {
+    const isActive = chip.classList.contains('active');
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    if (!isActive) {
+      chip.classList.add('active');
+      state.query = s;
+      document.getElementById('searchInput').value = s;
+    } else {
+      state.query = "";
+      document.getElementById('searchInput').value = "";
+    }
+    render();
+  });
+  chipsEl.appendChild(chip);
+});
+
+// ---------------- Filtering ----------------
+function matchesQuery(club, q) {
+  if (!q) return true;
+  const hay = (club.sport + " " + club.name + " " + club.city + " " + club.country + " " + club.desc).toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+function filteredClubs() {
+  return CLUBS.filter(c =>
+    matchesQuery(c, state.query) &&
+    (!state.housing || c.housing) &&
+    (!state.job || c.job) &&
+    (state.minSkill === 0 || c.skill >= state.minSkill)
+  );
+}
+
+function render() {
+  const visible = filteredClubs().map(c => c.id);
+  CLUBS.forEach(c => {
+    const el = markers[c.id].getElement();
+    if (el) el.style.display = visible.includes(c.id) ? '' : 'none';
+  });
+  document.getElementById('countNum').textContent = visible.length;
+
+  let activeFilters = 0;
+  if (state.housing) activeFilters++;
+  if (state.job) activeFilters++;
+  if (state.minSkill > 0) activeFilters++;
+  const badge = document.getElementById('filterBadge');
+  badge.textContent = activeFilters;
+  badge.classList.toggle('show', activeFilters > 0);
+}
+
+// ---------------- Events ----------------
+document.getElementById('searchBtn').addEventListener('click', () => {
+  state.query = document.getElementById('searchInput').value;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.textContent === state.query));
+  render();
+});
+document.getElementById('searchInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    state.query = e.target.value;
+    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.textContent === state.query));
+    render();
+  }
+});
+
+const filterToggle = document.getElementById('filterToggle');
+const filterPanel = document.getElementById('filterPanel');
+filterToggle.addEventListener('click', () => {
+  filterPanel.classList.toggle('open');
+  filterToggle.classList.toggle('active');
+});
+
+document.getElementById('filterHousing').addEventListener('change', (e) => { state.housing = e.target.checked; render(); });
+document.getElementById('filterJob').addEventListener('change', (e) => { state.job = e.target.checked; render(); });
+
+document.querySelectorAll('.skill-dot').forEach(dot => {
+  dot.addEventListener('click', () => {
+    const level = Number(dot.dataset.level);
+    state.minSkill = (state.minSkill === level) ? 0 : level;
+    document.querySelectorAll('.skill-dot').forEach(d => d.classList.toggle('on', Number(d.dataset.level) <= state.minSkill));
+    document.getElementById('skillHint').textContent = state.minSkill === 0 ? "Any level" : SKILL_LABELS[state.minSkill];
+    render();
+  });
+});
+
+render();
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.db-more-toggle');
+  if (!btn) return;
+  const more = btn.nextElementSibling;
+  if (!more || !more.classList.contains('db-more')) return;
+  const isOpen = more.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+  btn.firstChild.textContent = isOpen ? 'Show less ' : 'Tap for more detail ';
+});
+</script>
+</body>
+</html>

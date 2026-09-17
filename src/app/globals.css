@@ -1,0 +1,176 @@
+@import "tailwindcss";
+
+:root {
+  --color-coral: #ff6b4a;
+  --color-coral-deep: #e85a3a;
+  --color-teal: #1c8c7c;
+  --color-gold: #cfa125;
+  --color-gold-deep: #b08a1c;
+  --color-ink: #1e2a28;
+  --color-ink-soft: #5b6864;
+  --color-cloud: rgba(255, 255, 255, 0.94);
+  --color-mist: #eef2f0;
+  --color-mist-deep: #e4eae6;
+  --color-rust: #b5522a;
+
+  --background: #ffffff;
+  --foreground: var(--color-ink);
+}
+
+@theme inline {
+  --color-coral: var(--color-coral);
+  --color-coral-deep: var(--color-coral-deep);
+  --color-teal: var(--color-teal);
+  --color-gold: var(--color-gold);
+  --color-gold-deep: var(--color-gold-deep);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-cloud: var(--color-cloud);
+  --color-mist: var(--color-mist);
+  --color-mist-deep: var(--color-mist-deep);
+  --color-rust: var(--color-rust);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-serif: var(--font-fraunces);
+  --font-sans: var(--font-plex-sans);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-plex-sans), sans-serif;
+}
+
+/* Brand wordmark — burnt-orange velvet texture clipped to the letterforms,
+   with a soft shadow so it reads as slightly raised/tactile rather than
+   flat, matching the reference fabric swatch. */
+.wordmark-velvet {
+  background-image: url("/textures/wordmark-velvet.png");
+  background-size: 140px 140px;
+  background-repeat: repeat;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2),
+    0 2px 4px rgba(30, 20, 10, 0.28);
+  letter-spacing: 0.01em;
+}
+
+/* Fallback for browsers without background-clip:text support. */
+@supports not (background-clip: text) {
+  .wordmark-velvet {
+    color: var(--color-rust);
+    -webkit-text-fill-color: unset;
+  }
+}
+
+/* ---------------- Leaflet overrides shared across the app ---------------- */
+.leaflet-control-attribution {
+  font-size: 9px;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--color-ink-soft);
+  opacity: 0.75;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #bcd8e8;
+  font-family: var(--font-plex-sans), sans-serif;
+}
+
+.pin-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+.pin-wrap:hover,
+.pin-wrap:active {
+  transform: scale(1.15) translateY(-2px);
+}
+.pin {
+  width: 26px;
+  height: 26px;
+  background: var(--color-gold);
+  border: 2.5px solid white;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+.pin::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.leaflet-tooltip.quick-bubble {
+  background: white;
+  color: var(--color-ink);
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(20, 40, 35, 0.28);
+  padding: 10px 14px;
+  font-family: var(--font-plex-sans), sans-serif;
+  opacity: 1 !important;
+  pointer-events: none;
+}
+.leaflet-tooltip.quick-bubble::before {
+  border-top-color: white;
+}
+.qb-row {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+.qb-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.qb-thumb-empty {
+  background: linear-gradient(135deg, var(--color-teal), var(--color-ink));
+}
+.qb-name {
+  font-family: var(--font-fraunces), serif;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.qb-loc {
+  font-size: 11.5px;
+  color: var(--color-ink-soft);
+  margin-bottom: 6px;
+}
+.qb-tags {
+  display: flex;
+  gap: 5px;
+}
+.qb-tag {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--color-mist);
+  color: var(--color-ink-soft);
+}
+.qb-tag.yes {
+  background: #dcf2ec;
+  color: var(--color-teal);
+}
