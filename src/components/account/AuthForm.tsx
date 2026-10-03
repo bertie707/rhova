@@ -15,12 +15,51 @@ const submitClass =
   "w-full rounded-xl bg-coral py-2.5 text-sm font-semibold text-white hover:bg-coral-deep disabled:opacity-60";
 const linkClass = "text-xs font-medium text-teal hover:underline";
 
+function PasswordField({
+  value,
+  onChange,
+  placeholder,
+  minLength,
+  autoComplete,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  minLength?: number;
+  autoComplete?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative mb-3">
+      <input
+        type={show ? "text" : "password"}
+        required
+        minLength={minLength}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        className={`${inputClass} mb-0 pr-16`}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((v) => !v)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-soft hover:text-teal"
+      >
+        {show ? "Hide" : "Show"}
+      </button>
+    </div>
+  );
+}
+
 export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -55,6 +94,10 @@ export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("Passwords don't match");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -92,6 +135,10 @@ export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
 
   async function handleConfirmReset(e: React.FormEvent) {
     e.preventDefault();
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords don't match");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -126,14 +173,7 @@ export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
           placeholder="you@example.com"
           className={inputClass}
         />
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className={inputClass}
-        />
+        <PasswordField value={password} onChange={setPassword} placeholder="Password" autoComplete="current-password" />
         {error && <p className="mb-3 text-sm text-coral-deep">{error}</p>}
         <button type="submit" disabled={submitting} className={submitClass}>
           {submitting ? "Logging in…" : "Log in"}
@@ -162,14 +202,19 @@ export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
           placeholder="you@example.com"
           className={inputClass}
         />
-        <input
-          type="password"
-          required
-          minLength={8}
+        <PasswordField
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={setPassword}
           placeholder="Create a password (min. 8 characters)"
-          className={inputClass}
+          minLength={8}
+          autoComplete="new-password"
+        />
+        <PasswordField
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          placeholder="Confirm password"
+          minLength={8}
+          autoComplete="new-password"
         />
         {error && <p className="mb-3 text-sm text-coral-deep">{error}</p>}
         <button type="submit" disabled={submitting} className={submitClass}>
@@ -225,14 +270,19 @@ export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
         placeholder="123456"
         className={`${inputClass} text-center text-lg tracking-[0.3em]`}
       />
-      <input
-        type="password"
-        required
-        minLength={8}
+      <PasswordField
         value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
+        onChange={setNewPassword}
         placeholder="New password (min. 8 characters)"
-        className={inputClass}
+        minLength={8}
+        autoComplete="new-password"
+      />
+      <PasswordField
+        value={confirmNewPassword}
+        onChange={setConfirmNewPassword}
+        placeholder="Confirm new password"
+        minLength={8}
+        autoComplete="new-password"
       />
       {error && <p className="mb-3 text-sm text-coral-deep">{error}</p>}
       <button type="submit" disabled={submitting} className={submitClass}>
