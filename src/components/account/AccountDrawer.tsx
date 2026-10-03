@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { ClubWithMedia } from "@/lib/types";
 import { useVisitor } from "./VisitorContext";
 import AuthForm from "./AuthForm";
@@ -32,6 +33,7 @@ export default function AccountDrawer({ open, onClose, onSelectClub, authMode }:
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
   const [prevVisitorNotes, setPrevVisitorNotes] = useState(visitor?.notes);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Reset the textarea when the visitor identity changes (login/logout),
   // computed during render rather than in an effect —
@@ -71,6 +73,22 @@ export default function AccountDrawer({ open, onClose, onSelectClub, authMode }:
     await fetch(`/api/favorites/${clubId}`, { method: "DELETE" }).catch(() => null);
   }
 
+  async function handleDeleteAccount() {
+    if (!confirm("Delete your account? This permanently removes your favourites, notes, and login — it can't be undone.")) {
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      await fetch("/api/me", { method: "DELETE" });
+    } catch {
+      // Best-effort — refresh() below will show whether it actually worked.
+    } finally {
+      setDeletingAccount(false);
+      await refresh();
+      onClose();
+    }
+  }
+
   if (!open) return null;
 
   return (
@@ -102,9 +120,16 @@ export default function AccountDrawer({ open, onClose, onSelectClub, authMode }:
                 <p className="mb-2 text-sm">{visitor.email}</p>
                 <button
                   onClick={() => logout()}
-                  className="text-sm font-medium text-coral-deep hover:underline"
+                  className="mr-4 text-sm font-medium text-coral-deep hover:underline"
                 >
                   Log out
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deletingAccount}
+                  className="text-sm font-medium text-ink-soft hover:text-coral-deep hover:underline disabled:opacity-60"
+                >
+                  {deletingAccount ? "Deleting…" : "Delete my account"}
                 </button>
               </Section>
 
@@ -193,11 +218,19 @@ export default function AccountDrawer({ open, onClose, onSelectClub, authMode }:
           {process.env.NEXT_PUBLIC_CONTACT_EMAIL && (
             <a
               href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}?subject=Rhova%20feedback`}
-              className="text-sm font-medium text-teal hover:underline"
+              className="mb-3 block text-sm font-medium text-teal hover:underline"
             >
               Send feedback
             </a>
           )}
+          <div className="flex gap-3 text-xs text-ink-soft">
+            <Link href="/privacy" className="hover:underline">
+              Privacy policy
+            </Link>
+            <Link href="/terms" className="hover:underline">
+              Terms of service
+            </Link>
+          </div>
         </div>
       </div>
     </div>

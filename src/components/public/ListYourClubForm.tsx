@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { COST_TIERS, SKILL_LABELS } from "@/lib/types";
 import type { ClubSubmissionInput } from "@/lib/types";
 
@@ -54,6 +55,7 @@ export default function ListYourClubForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function set<K extends keyof ClubSubmissionInput>(key: K, value: ClubSubmissionInput[K]) {
@@ -396,6 +398,28 @@ export default function ListYourClubForm() {
           onChange={(e) => set("website", e.target.value)}
         />
       </div>
+
+      <label className="mb-4 flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          required
+          className="mt-0.5 h-4 w-4 accent-teal"
+          checked={confirmed}
+          onChange={(e) => setConfirmed(e.target.checked)}
+        />
+        <span>
+          I confirm this information is accurate and that I have the right to share any photos
+          uploaded. By submitting, I agree to Rhova&apos;s{" "}
+          <Link href="/terms" className="text-teal hover:underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-teal hover:underline">
+            Privacy policy
+          </Link>
+          .
+        </span>
+      </label>
 
       {error && <p className="mb-4 text-sm text-coral-deep">{error}</p>}
 

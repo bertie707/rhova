@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 type Mode = "login" | "signup" | "forgot" | "reset";
 
@@ -216,6 +217,17 @@ export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
           minLength={8}
           autoComplete="new-password"
         />
+        <p className="mb-3 text-xs text-ink-soft">
+          By signing up you agree to our{" "}
+          <Link href="/terms" className="text-teal hover:underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-teal hover:underline">
+            Privacy policy
+          </Link>
+          .
+        </p>
         {error && <p className="mb-3 text-sm text-coral-deep">{error}</p>}
         <button type="submit" disabled={submitting} className={submitClass}>
           {submitting ? "Creating account…" : "Sign up"}
