@@ -17,6 +17,14 @@ export const LOGIN_RATE_LIMIT: RateLimitConfig = {
   blockMs: 15 * 60 * 1000,
 };
 
+// Creating a visitor account: loose enough for normal use, tight enough to
+// blunt a script spinning up many fake accounts.
+export const SIGNUP_RATE_LIMIT: RateLimitConfig = {
+  windowMs: 60 * 60 * 1000,
+  maxAttempts: 10,
+  blockMs: 30 * 60 * 1000,
+};
+
 export const UPLOAD_RATE_LIMIT: RateLimitConfig = {
   windowMs: 5 * 60 * 1000,
   maxAttempts: 40,

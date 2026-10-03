@@ -47,3 +47,15 @@ export function otpExpiryDate(): Date {
 export function isOtpExpired(expiresAt: Date | null): boolean {
   return !expiresAt || expiresAt.getTime() < Date.now();
 }
+
+const MIN_PASSWORD_LENGTH = 8;
+
+export function passwordError(password: unknown): string | null {
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+  }
+  if (password.length > 200) {
+    return "Password must be 200 characters or fewer";
+  }
+  return null;
+}

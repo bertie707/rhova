@@ -38,6 +38,7 @@ export default function MapExperience({ initialClubs }: MapExperienceProps) {
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [showWelcome, setShowWelcome] = useState(false);
   const filterWrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -165,12 +166,19 @@ export default function MapExperience({ initialClubs }: MapExperienceProps) {
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
           onSelectClub={setSelectedClubId}
+          authMode={authMode}
         />
 
         {showWelcome && (
           <WelcomeScreen
             onLogin={() => {
               dismissWelcome();
+              setAuthMode("login");
+              setDrawerOpen(true);
+            }}
+            onSignup={() => {
+              dismissWelcome();
+              setAuthMode("signup");
               setDrawerOpen(true);
             }}
             onDismiss={dismissWelcome}

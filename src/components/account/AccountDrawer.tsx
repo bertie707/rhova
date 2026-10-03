@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ClubWithMedia } from "@/lib/types";
 import { useVisitor } from "./VisitorContext";
-import LoginForm from "./LoginForm";
+import AuthForm from "./AuthForm";
 import FaqAccordion from "./FaqAccordion";
 import PhotoPlaceholder from "../map/PhotoPlaceholder";
 
@@ -11,6 +11,7 @@ interface AccountDrawerProps {
   open: boolean;
   onClose: () => void;
   onSelectClub: (id: string) => void;
+  authMode: "login" | "signup";
 }
 
 const MAX_NOTES_LENGTH = 5000;
@@ -24,7 +25,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function AccountDrawer({ open, onClose, onSelectClub }: AccountDrawerProps) {
+export default function AccountDrawer({ open, onClose, onSelectClub, authMode }: AccountDrawerProps) {
   const { visitor, loading, refresh, logout } = useVisitor();
   const [favorites, setFavorites] = useState<ClubWithMedia[]>([]);
   const [notes, setNotes] = useState("");
@@ -90,8 +91,8 @@ export default function AccountDrawer({ open, onClose, onSelectClub }: AccountDr
 
         <div className="flex-1 overflow-y-auto px-5 py-5">
           {!loading && !visitor && (
-            <Section title="Log in">
-              <LoginForm onLoggedIn={() => refresh()} />
+            <Section title="Account">
+              <AuthForm initialMode={authMode} onLoggedIn={() => refresh()} />
             </Section>
           )}
 

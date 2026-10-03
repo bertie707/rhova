@@ -93,18 +93,19 @@ model Media {
   @@index([clubId])
 }
 
-// A visitor is identified by email only — no password, sign-in is via a
-// one-time code (see otpCode/otpExpiresAt below).
+// A visitor signs in with email + password. otpCode/otpExpiresAt are only
+// used for the "forgot password" flow (a reset code emailed via Resend),
+// not for everyday login.
 model Visitor {
   id    String @id @default(cuid())
   email String @unique
 
+  // Null means the account was never fully set up with a password (shouldn't
+  // happen via normal signup, but kept nullable for old pre-password rows).
+  passwordHash String?
+
   notes String @default("") // private "gap year ideas" scratchpad
 
-  // TEMP while there's no real email-sending service wired up: the current
-  // OTP code, shown directly to the visitor instead of emailed. Once a real
-  // email provider is configured, stop returning this in the API response —
-  // see src/app/api/auth/request-code/route.ts.
   otpCode      String?
   otpExpiresAt DateTime?
 

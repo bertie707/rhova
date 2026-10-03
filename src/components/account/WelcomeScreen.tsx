@@ -2,10 +2,11 @@
 
 interface WelcomeScreenProps {
   onLogin: () => void;
+  onSignup: () => void;
   onDismiss: () => void;
 }
 
-export default function WelcomeScreen({ onLogin, onDismiss }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onLogin, onSignup, onDismiss }: WelcomeScreenProps) {
   return (
     <div className="absolute inset-0 z-[950] flex items-center justify-center p-5">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
@@ -25,7 +26,7 @@ export default function WelcomeScreen({ onLogin, onDismiss }: WelcomeScreenProps
           Log in
         </button>
         <button
-          onClick={onLogin}
+          onClick={onSignup}
           className="mb-5 w-full rounded-xl border border-mist-deep py-3 text-sm font-semibold text-ink hover:bg-mist"
         >
           Sign up

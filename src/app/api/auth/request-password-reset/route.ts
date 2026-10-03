@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateOtpCode, otpExpiryDate } from "@/lib/visitorAuth";
+import { sendPasswordResetEmail } from "@/lib/email";
 import { checkRateLimit, recordFailedAttempt, OTP_REQUEST_RATE_LIMIT } from "@/lib/rateLimit";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   }
   const normalizedEmail = email.trim().toLowerCase();
 
-  const rateLimitKey = `otp-request:${normalizedEmail}`;
+  const rateLimitKey = `password-reset-request:${normalizedEmail}`;
   const rateLimit = await checkRateLimit(rateLimitKey);
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -23,18 +24,19 @@ export async function POST(request: NextRequest) {
   }
   await recordFailedAttempt(rateLimitKey, OTP_REQUEST_RATE_LIMIT);
 
-  const code = generateOtpCode();
-  const expiresAt = otpExpiryDate();
+  const visitor = await prisma.visitor.findUnique({ where: { email: normalizedEmail } });
 
-  await prisma.visitor.upsert({
-    where: { email: normalizedEmail },
-    create: { email: normalizedEmail, otpCode: code, otpExpiresAt: expiresAt },
-    update: { otpCode: code, otpExpiresAt: expiresAt },
-  });
+  // Always respond the same way whether or not the account exists, so this
+  // can't be used to check which emails have a Rhova account.
+  if (visitor) {
+    const code = generateOtpCode();
+    const expiresAt = otpExpiryDate();
+    await prisma.visitor.update({
+      where: { id: visitor.id },
+      data: { otpCode: code, otpExpiresAt: expiresAt },
+    });
+    await sendPasswordResetEmail(normalizedEmail, code);
+  }
 
-  // TEMP: no real email-sending service is configured yet, so the code is
-  // returned directly instead of emailed. Remove `devCode` from this
-  // response once that's wired up — see the schema.prisma note on
-  // Visitor.otpCode for the same flag.
-  return NextResponse.json({ ok: true, devCode: code });
+  return NextResponse.json({ ok: true });
 }

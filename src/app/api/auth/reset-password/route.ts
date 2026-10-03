@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { createVisitorSessionToken, isOtpExpired, VISITOR_SESSION_COOKIE } from "@/lib/visitorAuth";
+import { createVisitorSessionToken, VISITOR_SESSION_COOKIE, isOtpExpired, passwordError } from "@/lib/visitorAuth";
 import { checkRateLimit, recordFailedAttempt, clearRateLimit, OTP_VERIFY_RATE_LIMIT } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
-  const { email, code } = await request.json();
+  const { email, code, password } = await request.json();
 
   if (typeof email !== "string" || typeof code !== "string") {
     return NextResponse.json({ error: "Email and code are required" }, { status: 400 });
   }
+  const passwordIssue = passwordError(password);
+  if (passwordIssue) {
+    return NextResponse.json({ error: passwordIssue }, { status: 400 });
+  }
   const normalizedEmail = email.trim().toLowerCase();
 
-  const rateLimitKey = `otp-verify:${normalizedEmail}`;
+  const rateLimitKey = `password-reset-confirm:${normalizedEmail}`;
   const rateLimit = await checkRateLimit(rateLimitKey);
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -28,9 +33,11 @@ export async function POST(request: NextRequest) {
   }
 
   await clearRateLimit(rateLimitKey);
+
+  const passwordHash = await hash(password, 12);
   await prisma.visitor.update({
     where: { id: visitor.id },
-    data: { otpCode: null, otpExpiresAt: null },
+    data: { passwordHash, otpCode: null, otpExpiresAt: null },
   });
 
   const token = await createVisitorSessionToken(visitor.id);
