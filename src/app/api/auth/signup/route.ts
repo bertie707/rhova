@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { createVisitorSessionToken, VISITOR_SESSION_COOKIE, passwordError } from "@/lib/visitorAuth";
 import { checkRateLimit, recordFailedAttempt, SIGNUP_RATE_LIMIT } from "@/lib/rateLimit";
+import { MIN_SIGNUP_AGE, isOldEnough } from "@/lib/ageVerification";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   }
   await recordFailedAttempt(rateLimitKey, SIGNUP_RATE_LIMIT);
 
-  const { email, password } = await request.json();
+  const { email, password, dateOfBirth } = await request.json();
 
   if (typeof email !== "string" || !EMAIL_PATTERN.test(email) || email.length > 320) {
     return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
@@ -25,6 +26,12 @@ export async function POST(request: NextRequest) {
   const passwordIssue = passwordError(password);
   if (passwordIssue) {
     return NextResponse.json({ error: passwordIssue }, { status: 400 });
+  }
+  if (typeof dateOfBirth !== "string" || !isOldEnough(dateOfBirth)) {
+    return NextResponse.json(
+      { error: `You must be at least ${MIN_SIGNUP_AGE} years old to sign up` },
+      { status: 400 }
+    );
   }
   const normalizedEmail = email.trim().toLowerCase();
 

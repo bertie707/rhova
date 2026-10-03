@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { MIN_SIGNUP_AGE, isOldEnough, latestAllowedDateOfBirth } from "@/lib/ageVerification";
 
 type Mode = "login" | "signup" | "forgot" | "reset";
 
@@ -15,6 +16,7 @@ const inputClass =
 const submitClass =
   "w-full rounded-xl bg-coral py-2.5 text-sm font-semibold text-white hover:bg-coral-deep disabled:opacity-60";
 const linkClass = "text-xs font-medium text-teal hover:underline";
+const labelClass = "mb-1.5 block text-xs font-semibold text-ink-soft";
 
 function PasswordField({
   value,
@@ -58,6 +60,7 @@ export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -99,10 +102,14 @@ export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
       setError("Passwords don't match");
       return;
     }
+    if (!isOldEnough(dateOfBirth)) {
+      setError(`You must be at least ${MIN_SIGNUP_AGE} years old to sign up`);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      const { ok, data } = await post("/api/auth/signup", { email, password });
+      const { ok, data } = await post("/api/auth/signup", { email, password, dateOfBirth });
       if (!ok) {
         setError(data.error || "Something went wrong");
         return;
@@ -216,6 +223,15 @@ export default function AuthForm({ initialMode, onLoggedIn }: AuthFormProps) {
           placeholder="Confirm password"
           minLength={8}
           autoComplete="new-password"
+        />
+        <label className={labelClass}>Date of birth</label>
+        <input
+          type="date"
+          required
+          value={dateOfBirth}
+          max={latestAllowedDateOfBirth()}
+          onChange={(e) => setDateOfBirth(e.target.value)}
+          className={inputClass}
         />
         <p className="mb-3 text-xs text-ink-soft">
           By signing up you agree to our{" "}
