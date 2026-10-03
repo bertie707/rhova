@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: "Can I save places I'm interested in?",
-    a: "Yes, log in with just your email (no password) and tap the heart on any listing to save it to your favourites.",
+    a: "Yes, create a free account and tap the heart on any listing to save it to your favourites.",
   },
   {
     q: "What if a listing looks out of date?",
