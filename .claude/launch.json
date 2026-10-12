@@ -6,12 +6,6 @@
       "runtimeExecutable": "C:\\Program Files\\nodejs\\npm.cmd",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
-    },
-    {
-      "name": "woodwinters-demo",
-      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
-      "runtimeArgs": ["C:\\Users\\bwnwo\\woodwinters-demo\\serve.js"],
-      "port": 4321
     }
   ]
 }
