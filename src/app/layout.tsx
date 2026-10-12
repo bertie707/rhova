@@ -19,6 +19,7 @@ const SITE_DESCRIPTION =
   "Find gap year placements worldwide: rugby clubs, farms, ski seasons and more, each one verified by a real phone call, with real detail on housing, cost of living, and what the experience is actually like.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: "Rhova",
   description: SITE_DESCRIPTION,
   keywords: ["gap year", "gap year rugby", "gap year placements", "rugby club gap year", "work abroad gap year"],
@@ -31,6 +32,9 @@ export const metadata: Metadata = {
     title: "Rhova",
     description: SITE_DESCRIPTION,
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 };
 
