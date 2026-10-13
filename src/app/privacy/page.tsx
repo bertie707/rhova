@@ -44,8 +44,26 @@ export default function PrivacyPage() {
           <p><strong className="text-ink">If you list a club via &ldquo;List your club&rdquo;:</strong> the
             club&apos;s details and the contact name, phone number, email address, and any photos
             you submit.</p>
+          <p><strong className="text-ink">If we contact your club directly:</strong> before a club
+            has joined Rhova, we sometimes research and reach out to clubs we think travellers would
+            be interested in — see &ldquo;Clubs we contact directly&rdquo; below for how that works.</p>
           <p>We don&apos;t run analytics or advertising trackers, and we don&apos;t sell or share
             your data with advertisers.</p>
+        </Section>
+
+        <Section title="Clubs we contact directly">
+          <p>Separately from clubs that list themselves, we sometimes find clubs ourselves — using
+            contact details published on the club&apos;s own website or public listing — and reach
+            out to ask if they&apos;d like to be included. For these we hold the club&apos;s name,
+            location, category, and the public contact email or website we found.</p>
+          <p>Our legal basis for this is <strong className="text-ink">legitimate interests</strong>:
+            we have a genuine, relevant reason to contact a club about a free directory aimed at
+            exactly the kind of traveller who&apos;d want to find them, and we only use contact
+            details the club has already made public for this purpose. We don&apos;t buy contact
+            lists or scrape private information.</p>
+          <p>Every outreach email says who we are and why we&apos;re contacting you, and you can
+            reply to any message (or email us at the address above) to be removed and have your
+            details deleted — we&apos;ll action that straight away.</p>
         </Section>
 
         <Section title="Why we collect it">
@@ -73,7 +91,9 @@ export default function PrivacyPage() {
           <p>Visitor accounts are kept until you delete them — you can do this yourself any time from
             the account menu (Profile → Delete my account), which permanently removes your email,
             password, favourites, and notes. Club listings are kept until an admin removes them, e.g.
-            at the club&apos;s request.</p>
+            at the club&apos;s request. Details for clubs we&apos;re considering contacting (or have
+            contacted) are kept only while that outreach is active — deleted once a club joins, declines,
+            or asks to be removed.</p>
         </Section>
 
         <Section title="Your rights">
